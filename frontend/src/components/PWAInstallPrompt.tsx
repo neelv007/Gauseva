@@ -19,43 +19,61 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+declare global {
+  interface WindowEventMap {
+    beforeinstallprompt: BeforeInstallPromptEvent;
+  }
+}
+
 export const PWAInstallPrompt: React.FC = () => {
   const [showPrompt, setShowPrompt] = useState(false);
-  const [showIOSInstructions, setShowIOSInstructions] = useState(false);
+  const [showManualInstructions, setShowManualInstructions] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
+    if (typeof window === 'undefined') return;
 
     // Check if already installed (standalone mode)
     const checkStandalone = () => {
-      const standalone = window.matchMedia('(display-mode: standalone)').matches ||
-        (window.navigator as any).standalone === true;
-      setIsStandalone(standalone);
-      return standalone;
+      const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as any).standalone === true ||
+        document.referrer.includes('android-app://');
+      setIsStandalone(isStandaloneMode);
+      return isStandaloneMode;
     };
 
     if (checkStandalone()) return;
 
+    // Detect device type
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
+    const isAndroidDevice = /android/.test(userAgent);
+    const isSafari = /safari/.test(userAgent) && !/chrome/.test(userAgent);
+    
+    setIsIOS(isIOSDevice);
+    setIsAndroid(isAndroidDevice);
+
     // Check if user dismissed the prompt before
     const checkDismissed = async () => {
-      const dismissed = await AsyncStorage.getItem('pwa-install-dismissed');
-      const dismissedTime = dismissed ? parseInt(dismissed) : 0;
-      const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24);
-      
-      // Show again after 3 days
-      return dismissedTime > 0 && daysSinceDismissed < 3;
+      try {
+        const dismissed = await AsyncStorage.getItem('pwa-install-dismissed');
+        const dismissedTime = dismissed ? parseInt(dismissed) : 0;
+        const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24);
+        return dismissedTime > 0 && daysSinceDismissed < 3;
+      } catch {
+        return false;
+      }
     };
 
-    // Detect iOS
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
-
-    // Listen for beforeinstallprompt (Android/Chrome)
-    const handleBeforeInstall = (e: Event) => {
+    // Listen for beforeinstallprompt (Chrome on Android)
+    const handleBeforeInstall = (e: BeforeInstallPromptEvent) => {
+      console.log('beforeinstallprompt event fired!');
       e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      setDeferredPrompt(e);
       
       checkDismissed().then(wasDismissed => {
         if (!wasDismissed) {
@@ -64,58 +82,148 @@ export const PWAInstallPrompt: React.FC = () => {
       });
     };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall as any);
 
-    // For iOS Safari - show manual instructions
-    if (isIOS && isSafari) {
-      checkDismissed().then(wasDismissed => {
-        if (!wasDismissed) {
-          setTimeout(() => setShowIOSInstructions(true), 2000);
-        }
-      });
-    }
-
-    // For browsers that don't support beforeinstallprompt, show after delay
-    const timer = setTimeout(async () => {
+    // If no beforeinstallprompt after 3 seconds, show manual instructions
+    const fallbackTimer = setTimeout(async () => {
       const wasDismissed = await checkDismissed();
-      if (!wasDismissed && !deferredPrompt && !isIOS) {
-        setShowPrompt(true);
+      if (!wasDismissed && !deferredPrompt) {
+        // Show manual instructions for iOS or browsers without beforeinstallprompt
+        if (isIOSDevice || !deferredPrompt) {
+          setTimeout(() => setShowManualInstructions(true), 2000);
+        }
       }
-    }, 5000);
+    }, 3000);
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
-      clearTimeout(timer);
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall as any);
+      clearTimeout(fallbackTimer);
     };
-  }, []);
+  }, [deferredPrompt]);
 
   const handleInstall = async () => {
     if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setShowPrompt(false);
+      console.log('Triggering install prompt...');
+      try {
+        await deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log('User choice:', outcome);
+        if (outcome === 'accepted') {
+          setShowPrompt(false);
+          setDeferredPrompt(null);
+        }
+      } catch (error) {
+        console.error('Install error:', error);
       }
-      setDeferredPrompt(null);
     } else {
-      // Show manual instructions for browsers without beforeinstallprompt
-      setShowIOSInstructions(true);
+      // Show manual instructions
+      setShowManualInstructions(true);
       setShowPrompt(false);
     }
   };
 
   const handleDismiss = async () => {
-    await AsyncStorage.setItem('pwa-install-dismissed', Date.now().toString());
+    try {
+      await AsyncStorage.setItem('pwa-install-dismissed', Date.now().toString());
+    } catch {}
     setShowPrompt(false);
-    setShowIOSInstructions(false);
+    setShowManualInstructions(false);
   };
 
   if (Platform.OS !== 'web' || isStandalone) return null;
 
+  // Manual Instructions Content (for iOS or fallback)
+  const ManualInstructionsContent = () => (
+    <View style={styles.promptContent}>
+      <Image source={{ uri: APP_LOGO }} style={styles.appIcon} />
+      <Text style={styles.promptTitle}>Install Gau Seva</Text>
+      <Text style={styles.promptText}>
+        Add this app to your home screen for quick access:
+      </Text>
+      
+      <View style={styles.instructions}>
+        {isIOS ? (
+          // iOS Safari Instructions
+          <>
+            <View style={styles.instructionStep}>
+              <View style={styles.stepNumber}>
+                <Text style={styles.stepNumberText}>1</Text>
+              </View>
+              <View style={styles.instructionContent}>
+                <Text style={styles.instructionText}>
+                  Tap the Share button
+                </Text>
+                <Ionicons name="share-outline" size={24} color={COLORS.saffron} />
+              </View>
+            </View>
+            
+            <View style={styles.instructionStep}>
+              <View style={styles.stepNumber}>
+                <Text style={styles.stepNumberText}>2</Text>
+              </View>
+              <Text style={styles.instructionText}>
+                Scroll and tap "Add to Home Screen"
+              </Text>
+            </View>
+            
+            <View style={styles.instructionStep}>
+              <View style={styles.stepNumber}>
+                <Text style={styles.stepNumberText}>3</Text>
+              </View>
+              <Text style={styles.instructionText}>
+                Tap "Add" in the top right
+              </Text>
+            </View>
+          </>
+        ) : (
+          // Android Chrome Instructions
+          <>
+            <View style={styles.instructionStep}>
+              <View style={styles.stepNumber}>
+                <Text style={styles.stepNumberText}>1</Text>
+              </View>
+              <View style={styles.instructionContent}>
+                <Text style={styles.instructionText}>
+                  Tap the menu button
+                </Text>
+                <Ionicons name="ellipsis-vertical" size={24} color={COLORS.saffron} />
+              </View>
+            </View>
+            
+            <View style={styles.instructionStep}>
+              <View style={styles.stepNumber}>
+                <Text style={styles.stepNumberText}>2</Text>
+              </View>
+              <View style={styles.instructionContent}>
+                <Text style={styles.instructionText}>
+                  Tap "Install app" or "Add to Home screen"
+                </Text>
+                <Ionicons name="download-outline" size={24} color={COLORS.saffron} />
+              </View>
+            </View>
+            
+            <View style={styles.instructionStep}>
+              <View style={styles.stepNumber}>
+                <Text style={styles.stepNumberText}>3</Text>
+              </View>
+              <Text style={styles.instructionText}>
+                Tap "Install" to confirm
+              </Text>
+            </View>
+          </>
+        )}
+      </View>
+
+      <TouchableOpacity style={styles.gotItBtn} onPress={handleDismiss}>
+        <Text style={styles.gotItBtnText}>Got It!</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <>
-      {/* Install Prompt Banner */}
-      <Modal visible={showPrompt} transparent animationType="slide">
+      {/* Native Install Prompt (when beforeinstallprompt is available) */}
+      <Modal visible={showPrompt && deferredPrompt !== null} transparent animationType="slide">
         <View style={styles.overlay}>
           <View style={styles.promptContainer}>
             <TouchableOpacity style={styles.closeBtn} onPress={handleDismiss}>
@@ -126,103 +234,67 @@ export const PWAInstallPrompt: React.FC = () => {
               <Image source={{ uri: APP_LOGO }} style={styles.appIcon} />
               <Text style={styles.promptTitle}>Install Gau Seva</Text>
               <Text style={styles.promptText}>
-                Add this app to your home screen for a better experience - works offline and opens like a real app!
+                Install this app on your device for the best experience - faster access, works offline, and no browser bar!
               </Text>
               
               <View style={styles.features}>
                 <View style={styles.featureItem}>
                   <Ionicons name="flash" size={20} color={COLORS.green} />
-                  <Text style={styles.featureText}>Faster Access</Text>
+                  <Text style={styles.featureText}>Faster</Text>
                 </View>
                 <View style={styles.featureItem}>
                   <Ionicons name="cloud-offline" size={20} color={COLORS.green} />
-                  <Text style={styles.featureText}>Works Offline</Text>
+                  <Text style={styles.featureText}>Offline</Text>
                 </View>
                 <View style={styles.featureItem}>
                   <Ionicons name="phone-portrait" size={20} color={COLORS.green} />
                   <Text style={styles.featureText}>Full Screen</Text>
                 </View>
+                <View style={styles.featureItem}>
+                  <Ionicons name="notifications" size={20} color={COLORS.green} />
+                  <Text style={styles.featureText}>Alerts</Text>
+                </View>
               </View>
 
               <TouchableOpacity style={styles.installBtn} onPress={handleInstall}>
                 <Ionicons name="download" size={20} color={COLORS.white} />
-                <Text style={styles.installBtnText}>Install App</Text>
+                <Text style={styles.installBtnText}>Install Now</Text>
               </TouchableOpacity>
               
               <TouchableOpacity onPress={handleDismiss}>
-                <Text style={styles.laterText}>Maybe Later</Text>
+                <Text style={styles.laterText}>Not Now</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
 
-      {/* iOS Instructions Modal */}
-      <Modal visible={showIOSInstructions} transparent animationType="slide">
+      {/* Manual Instructions Modal (for iOS or browsers without beforeinstallprompt) */}
+      <Modal visible={showManualInstructions || (showPrompt && deferredPrompt === null)} transparent animationType="slide">
         <View style={styles.overlay}>
           <View style={styles.promptContainer}>
             <TouchableOpacity style={styles.closeBtn} onPress={handleDismiss}>
               <Ionicons name="close" size={24} color={COLORS.textSecondary} />
             </TouchableOpacity>
-            
-            <View style={styles.promptContent}>
-              <Image source={{ uri: APP_LOGO }} style={styles.appIcon} />
-              <Text style={styles.promptTitle}>Install Gau Seva</Text>
-              <Text style={styles.promptText}>
-                To install this app on your device, follow these steps:
-              </Text>
-              
-              <View style={styles.instructions}>
-                <View style={styles.instructionStep}>
-                  <View style={styles.stepNumber}>
-                    <Text style={styles.stepNumberText}>1</Text>
-                  </View>
-                  <Text style={styles.instructionText}>
-                    Tap the <Ionicons name="share-outline" size={18} color={COLORS.saffron} /> Share button in your browser
-                  </Text>
-                </View>
-                
-                <View style={styles.instructionStep}>
-                  <View style={styles.stepNumber}>
-                    <Text style={styles.stepNumberText}>2</Text>
-                  </View>
-                  <Text style={styles.instructionText}>
-                    Scroll down and tap "Add to Home Screen"
-                  </Text>
-                </View>
-                
-                <View style={styles.instructionStep}>
-                  <View style={styles.stepNumber}>
-                    <Text style={styles.stepNumberText}>3</Text>
-                  </View>
-                  <Text style={styles.instructionText}>
-                    Tap "Add" to install the app
-                  </Text>
-                </View>
-              </View>
-
-              <TouchableOpacity style={styles.gotItBtn} onPress={handleDismiss}>
-                <Text style={styles.gotItBtnText}>Got It!</Text>
-              </TouchableOpacity>
-            </View>
+            <ManualInstructionsContent />
           </View>
         </View>
       </Modal>
 
-      {/* Floating Install Button (always visible when not installed) */}
-      {!showPrompt && !showIOSInstructions && (
+      {/* Floating Install Button */}
+      {!showPrompt && !showManualInstructions && (
         <TouchableOpacity 
           style={styles.floatingBtn}
           onPress={() => {
             if (deferredPrompt) {
               setShowPrompt(true);
             } else {
-              setShowIOSInstructions(true);
+              setShowManualInstructions(true);
             }
           }}
         >
-          <Ionicons name="download" size={20} color={COLORS.white} />
-          <Text style={styles.floatingBtnText}>Install App</Text>
+          <Ionicons name="download" size={18} color={COLORS.white} />
+          <Text style={styles.floatingBtnText}>Install</Text>
         </TouchableOpacity>
       )}
     </>
@@ -256,7 +328,7 @@ const styles = StyleSheet.create({
   appIcon: {
     width: 80,
     height: 80,
-    borderRadius: 16,
+    borderRadius: 20,
     marginBottom: SPACING.md,
     borderWidth: 2,
     borderColor: COLORS.saffron,
@@ -287,7 +359,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   featureText: {
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.textSecondary,
   },
   installBtn: {
@@ -322,10 +394,16 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
     paddingHorizontal: SPACING.sm,
   },
+  instructionContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   stepNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: COLORS.saffron,
     justifyContent: 'center',
     alignItems: 'center',
@@ -334,13 +412,13 @@ const styles = StyleSheet.create({
   stepNumberText: {
     color: COLORS.white,
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: 16,
   },
   instructionText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 15,
     color: COLORS.textPrimary,
-    lineHeight: 20,
+    lineHeight: 22,
   },
   gotItBtn: {
     backgroundColor: COLORS.saffron,
@@ -362,10 +440,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.green,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 30,
-    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 25,
+    gap: 6,
     elevation: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -376,6 +454,6 @@ const styles = StyleSheet.create({
   floatingBtnText: {
     color: COLORS.white,
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: 13,
   },
 });

@@ -1,0 +1,24 @@
+{
+  "name": "Gau Seva",
+  "short_name": "Gau Seva",
+  "description": "Government of Uttar Pradesh - Animal Husbandry Department Application",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FF9933",
+  "theme_color": "#FF9933",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/assets/images/icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/images/icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["government", "utilities"],
+  "lang": "en-IN"
+}

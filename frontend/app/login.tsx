@@ -90,7 +90,7 @@ export default function LoginPage() {
             {/* Logo */}
             <View style={styles.logoContainer}>
               <View style={styles.logoCircle}>
-                <Image source={{ uri: APP_LOGO }} style={styles.logoImage} />
+                <Image source={APP_LOGO} style={styles.logoImage} />
               </View>
               <Text style={styles.logoTitle}>Gau Seva</Text>
               <Text style={styles.logoSubtitle}>Government of Uttar Pradesh</Text>

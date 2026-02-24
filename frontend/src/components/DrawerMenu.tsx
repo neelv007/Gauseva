@@ -65,9 +65,9 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({ visible, onClose }) => {
           {/* Header */}
           <View style={styles.drawerHeader}>
             <View style={styles.logoContainer}>
-              <Ionicons name="shield-checkmark" size={40} color={COLORS.saffron} />
+              <Image source={{ uri: APP_LOGO }} style={styles.drawerLogo} />
             </View>
-            <Text style={styles.drawerTitle}>Animal Husbandry</Text>
+            <Text style={styles.drawerTitle}>Gau Seva</Text>
             <Text style={styles.drawerSubtitle}>Government of Uttar Pradesh</Text>
             <TouchableOpacity style={styles.closeButton} onPress={onClose}>
               <Ionicons name="close" size={28} color={COLORS.textPrimary} />

@@ -18,12 +18,16 @@ const firebaseConfig = {
   appId: "1:231543168525:web:a2a156bdf9635c45f7bf44"
 };
 
-// Initialize Firebase only if not already initialized
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
+// Initialize Firebase
+let app: any;
+let auth: any;
 
-// Enable invisible reCAPTCHA for better UX
-auth.settings.appVerificationDisabledForTesting = false;
+try {
+  app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+  auth = getAuth(app);
+} catch (error) {
+  console.error('Firebase init error:', error);
+}
 
 interface OTPState {
   isOtpSent: boolean;
@@ -32,16 +36,31 @@ interface OTPState {
   error: string | null;
   phoneNumber: string;
   confirmationResult: ConfirmationResult | null;
-  recaptchaVerifier: RecaptchaVerifier | null;
   sendOtp: (phoneNumber: string) => Promise<boolean>;
   verifyOtp: (otp: string) => Promise<boolean>;
   resetOtp: () => void;
-  setupRecaptcha: (containerId: string) => void;
 }
 
-// Set to false to use REAL Firebase OTP
-const DEMO_MODE = false;
-const DEMO_OTP = '123456';
+// Global recaptcha verifier
+let recaptchaVerifier: RecaptchaVerifier | null = null;
+let recaptchaWidgetId: number | null = null;
+
+// Cleanup function
+const cleanupRecaptcha = () => {
+  if (recaptchaVerifier) {
+    try {
+      recaptchaVerifier.clear();
+    } catch (e) {
+      // Ignore
+    }
+    recaptchaVerifier = null;
+  }
+  // Remove any existing recaptcha containers
+  const existingContainer = document.getElementById('recaptcha-container');
+  if (existingContainer) {
+    existingContainer.innerHTML = '';
+  }
+};
 
 export const useOTPStore = create<OTPState>((set, get) => ({
   isOtpSent: false,
@@ -50,43 +69,14 @@ export const useOTPStore = create<OTPState>((set, get) => ({
   error: null,
   phoneNumber: '',
   confirmationResult: null,
-  recaptchaVerifier: null,
-
-  setupRecaptcha: (containerId: string) => {
-    if (Platform.OS !== 'web') return;
-    
-    try {
-      // Clear existing recaptcha if any
-      const existingVerifier = get().recaptchaVerifier;
-      if (existingVerifier) {
-        existingVerifier.clear();
-      }
-
-      const verifier = new RecaptchaVerifier(auth, containerId, {
-        size: 'invisible',
-        callback: () => {
-          console.log('reCAPTCHA solved');
-        },
-        'expired-callback': () => {
-          console.log('reCAPTCHA expired');
-          set({ error: 'reCAPTCHA expired. Please try again.' });
-        }
-      });
-      
-      set({ recaptchaVerifier: verifier });
-    } catch (error) {
-      console.error('Error setting up reCAPTCHA:', error);
-    }
-  },
 
   sendOtp: async (phoneNumber: string) => {
     set({ isLoading: true, error: null });
     
     try {
-      // Demo mode for testing
-      if (DEMO_MODE) {
-        console.log('Demo mode: OTP sent to', phoneNumber);
-        console.log('Use OTP: 123456 to verify');
+      if (Platform.OS !== 'web' || !auth) {
+        // Demo mode for non-web or if Firebase not initialized
+        console.log('Using demo OTP mode');
         await new Promise(resolve => setTimeout(resolve, 1500));
         set({ 
           isOtpSent: true, 
@@ -97,61 +87,77 @@ export const useOTPStore = create<OTPState>((set, get) => ({
         return true;
       }
 
-      // Real Firebase OTP
-      if (Platform.OS === 'web') {
-        let { recaptchaVerifier } = get();
-        
-        // Setup recaptcha if not exists
-        if (!recaptchaVerifier) {
-          // Create invisible recaptcha
-          recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-            size: 'invisible',
-            callback: () => {
-              console.log('reCAPTCHA verified');
-            }
-          });
-          set({ recaptchaVerifier });
-        }
-
-        // Format phone number (ensure it has country code)
-        const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber}`;
-        
-        console.log('Sending OTP to:', formattedPhone);
-        
-        const confirmationResult = await signInWithPhoneNumber(auth, formattedPhone, recaptchaVerifier);
-        
-        set({ 
-          confirmationResult, 
-          isOtpSent: true, 
-          phoneNumber: formattedPhone, 
-          isLoading: false,
-          error: null 
-        });
-        
-        return true;
-      } else {
-        // For native platforms, use demo mode as fallback
-        console.log('Native platform - using demo mode');
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        set({ 
-          isOtpSent: true, 
-          phoneNumber, 
-          isLoading: false,
-          error: null 
-        });
-        return true;
-      }
-    } catch (error: any) {
-      console.error('OTP Error:', error);
+      // Format phone number
+      const formattedPhone = phoneNumber.startsWith('+') 
+        ? phoneNumber 
+        : phoneNumber.startsWith('91') 
+          ? `+${phoneNumber}`
+          : `+91${phoneNumber}`;
       
-      let errorMessage = 'Failed to send OTP';
+      console.log('Sending OTP to:', formattedPhone);
+
+      // Cleanup existing recaptcha
+      cleanupRecaptcha();
+
+      // Create or get recaptcha container
+      let container = document.getElementById('recaptcha-container');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'recaptcha-container';
+        container.style.position = 'fixed';
+        container.style.bottom = '0';
+        container.style.left = '0';
+        container.style.zIndex = '9999';
+        document.body.appendChild(container);
+      }
+
+      // Create new invisible recaptcha
+      recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible',
+        callback: (response: any) => {
+          console.log('reCAPTCHA solved:', response);
+        },
+        'expired-callback': () => {
+          console.log('reCAPTCHA expired');
+          set({ error: 'Verification expired. Please try again.' });
+        }
+      });
+
+      // Render the recaptcha
+      await recaptchaVerifier.render();
+      console.log('reCAPTCHA rendered');
+
+      // Send OTP
+      const confirmationResult = await signInWithPhoneNumber(auth, formattedPhone, recaptchaVerifier);
+      console.log('OTP sent successfully');
+      
+      set({ 
+        confirmationResult, 
+        isOtpSent: true, 
+        phoneNumber: formattedPhone, 
+        isLoading: false,
+        error: null 
+      });
+      
+      return true;
+    } catch (error: any) {
+      console.error('Send OTP Error:', error);
+      
+      // Cleanup on error
+      cleanupRecaptcha();
+      
+      let errorMessage = 'Failed to send OTP. Please try again.';
       
       if (error.code === 'auth/invalid-phone-number') {
-        errorMessage = 'Invalid phone number format';
+        errorMessage = 'Invalid phone number. Please enter a valid number.';
       } else if (error.code === 'auth/too-many-requests') {
-        errorMessage = 'Too many attempts. Please try again later';
+        errorMessage = 'Too many attempts. Please wait and try again later.';
+      } else if (error.code === 'auth/quota-exceeded') {
+        errorMessage = 'SMS quota exceeded. Please try again later.';
       } else if (error.code === 'auth/captcha-check-failed') {
-        errorMessage = 'reCAPTCHA verification failed. Please refresh and try again';
+        errorMessage = 'Security check failed. Please refresh the page.';
+      } else if (error.code === 'auth/network-request-failed') {
+        errorMessage = 'Network error. Please check your connection.';
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -168,39 +174,41 @@ export const useOTPStore = create<OTPState>((set, get) => ({
     set({ isLoading: true, error: null });
     
     try {
-      // Demo mode
-      if (DEMO_MODE) {
+      const { confirmationResult } = get();
+      
+      if (!confirmationResult) {
+        // Demo mode verification
         await new Promise(resolve => setTimeout(resolve, 1000));
-        if (otp === DEMO_OTP) {
+        if (otp === '123456') {
           set({ isOtpVerified: true, isLoading: false, error: null });
           return true;
         } else {
-          set({ isLoading: false, error: 'Invalid OTP. Use 123456 for demo.' });
+          set({ isLoading: false, error: 'Invalid OTP. For demo, use: 123456' });
           return false;
         }
       }
 
       // Real Firebase verification
-      const { confirmationResult } = get();
+      console.log('Verifying OTP:', otp);
+      await confirmationResult.confirm(otp);
+      console.log('OTP verified successfully');
       
-      if (confirmationResult) {
-        await confirmationResult.confirm(otp);
-        set({ isOtpVerified: true, isLoading: false, error: null });
-        return true;
-      } else {
-        // Fallback for native or if no confirmation result
-        set({ isLoading: false, error: 'Please send OTP first' });
-        return false;
-      }
+      // Cleanup recaptcha after successful verification
+      cleanupRecaptcha();
+      
+      set({ isOtpVerified: true, isLoading: false, error: null });
+      return true;
     } catch (error: any) {
-      console.error('Verification Error:', error);
+      console.error('Verify OTP Error:', error);
       
-      let errorMessage = 'Invalid OTP';
+      let errorMessage = 'Invalid OTP. Please try again.';
       
       if (error.code === 'auth/invalid-verification-code') {
-        errorMessage = 'Invalid OTP code. Please check and try again';
+        errorMessage = 'Wrong OTP. Please check and try again.';
       } else if (error.code === 'auth/code-expired') {
-        errorMessage = 'OTP has expired. Please request a new one';
+        errorMessage = 'OTP expired. Please request a new one.';
+      } else if (error.code === 'auth/session-expired') {
+        errorMessage = 'Session expired. Please request a new OTP.';
       }
       
       set({ 
@@ -212,15 +220,7 @@ export const useOTPStore = create<OTPState>((set, get) => ({
   },
 
   resetOtp: () => {
-    const { recaptchaVerifier } = get();
-    if (recaptchaVerifier) {
-      try {
-        recaptchaVerifier.clear();
-      } catch (e) {
-        // Ignore cleanup errors
-      }
-    }
-    
+    cleanupRecaptcha();
     set({
       isOtpSent: false,
       isOtpVerified: false,
@@ -228,7 +228,6 @@ export const useOTPStore = create<OTPState>((set, get) => ({
       error: null,
       phoneNumber: '',
       confirmationResult: null,
-      recaptchaVerifier: null,
     });
   },
 }));

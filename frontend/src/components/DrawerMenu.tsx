@@ -65,7 +65,7 @@ export const DrawerMenu: React.FC<DrawerMenuProps> = ({ visible, onClose }) => {
           {/* Header */}
           <View style={styles.drawerHeader}>
             <View style={styles.logoContainer}>
-              <Image source={{ uri: APP_LOGO }} style={styles.drawerLogo} />
+              <Image source={APP_LOGO} style={styles.drawerLogo} />
             </View>
             <Text style={styles.drawerTitle}>Gau Seva</Text>
             <Text style={styles.drawerSubtitle}>Government of Uttar Pradesh</Text>

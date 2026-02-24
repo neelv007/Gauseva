@@ -135,7 +135,7 @@ export const PWAInstallPrompt: React.FC = () => {
   // Manual Instructions Content (for iOS or fallback)
   const ManualInstructionsContent = () => (
     <View style={styles.promptContent}>
-      <Image source={{ uri: APP_LOGO }} style={styles.appIcon} />
+      <Image source={APP_LOGO} style={styles.appIcon} />
       <Text style={styles.promptTitle}>Install Gau Seva</Text>
       <Text style={styles.promptText}>
         Add this app to your home screen for quick access:
@@ -231,7 +231,7 @@ export const PWAInstallPrompt: React.FC = () => {
             </TouchableOpacity>
             
             <View style={styles.promptContent}>
-              <Image source={{ uri: APP_LOGO }} style={styles.appIcon} />
+              <Image source={APP_LOGO} style={styles.appIcon} />
               <Text style={styles.promptTitle}>Install Gau Seva</Text>
               <Text style={styles.promptText}>
                 Install this app on your device for the best experience - faster access, works offline, and no browser bar!

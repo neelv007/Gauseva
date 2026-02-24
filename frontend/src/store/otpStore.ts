@@ -151,7 +151,7 @@ export const useOTPStore = create<OTPState>((set, get) => ({
       if (error.code === 'auth/invalid-phone-number') {
         errorMessage = 'Invalid phone number. Please enter a valid number.';
       } else if (error.code === 'auth/too-many-requests') {
-        errorMessage = 'Too many attempts. Please wait and try again later.';
+        errorMessage = 'Too many OTP requests. Please add this number as a test number in Firebase Console, or wait 1 hour and try again.';
       } else if (error.code === 'auth/quota-exceeded') {
         errorMessage = 'SMS quota exceeded. Please try again later.';
       } else if (error.code === 'auth/captcha-check-failed') {

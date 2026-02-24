@@ -18,7 +18,7 @@ import { LoadingSpinner } from '../src/components/LoadingSpinner';
 import { COLORS, SPACING } from '../src/constants/colors';
 import { useAuthStore } from '../src/store/authStore';
 
-const APP_LOGO = 'https://customer-assets.emergentagent.com/job_citizen-ref-hub/artifacts/h91vxs4b_466389831_567307805952219_3183561701720241008_n.jpg';
+const APP_LOGO = require('../assets/images/gau-seva-logo.jpg');
 
 export default function LoginPage() {
   const router = useRouter();

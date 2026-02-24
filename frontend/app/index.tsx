@@ -67,7 +67,7 @@ export default function HomePage() {
             <View style={styles.leaderCard}>
               <View style={styles.leaderImageContainer}>
                 <ImageWithFallback
-                  source={{ uri: 'https://www.yogiadityanath.in/images/cm.jpg' }}
+                  source={{ uri: 'https://i.ibb.co/HpVnKzh0/yogiji.png' }}
                   fallbackInitials="YA"
                   fallbackColor={COLORS.saffron}
                   style={styles.leaderImage}

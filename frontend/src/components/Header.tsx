@@ -4,13 +4,10 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING } from '../constants/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const APP_LOGO = 'https://customer-assets.emergentagent.com/job_citizen-ref-hub/artifacts/h91vxs4b_466389831_567307805952219_3183561701720241008_n.jpg';
 
 interface HeaderProps {
   title?: string;
@@ -52,7 +49,9 @@ export const Header: React.FC<HeaderProps> = ({
         )}
 
         <View style={styles.titleContainer}>
-          <Image source={{ uri: APP_LOGO }} style={styles.logoImage} />
+          <View style={styles.logoContainer}>
+            <Text style={styles.logoText}>🐄</Text>
+          </View>
           <Text style={styles.title}>{title || 'Gau Seva'}</Text>
         </View>
 
@@ -104,11 +103,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  logoImage: {
+  logoContainer: {
     width: 36,
     height: 36,
     borderRadius: 18,
     backgroundColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoText: {
+    fontSize: 20,
   },
   title: {
     color: COLORS.white,

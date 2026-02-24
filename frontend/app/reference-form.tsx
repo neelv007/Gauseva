@@ -197,6 +197,9 @@ export default function ReferenceFormPage() {
 
   return (
     <View style={styles.container}>
+      {/* Hidden reCAPTCHA container for Firebase Phone Auth */}
+      <View nativeID="recaptcha-container" style={styles.recaptchaContainer} />
+      
       <Header
         title="Reference Form"
         showBack={true}

@@ -24,7 +24,7 @@ export default function HomePage() {
         {/* Hero Banner */}
         <View style={styles.heroBanner}>
           <Image
-            source={{ uri: 'https://customer-assets.emergentagent.com/job_citizen-ref-hub/artifacts/5uya9kaw_gau3.webp' }}
+            source={{ uri: 'https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?w=800&q=80' }}
             style={styles.heroImage}
             resizeMode="cover"
           />

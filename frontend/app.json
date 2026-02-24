@@ -1,23 +1,25 @@
 {
   "expo": {
-    "name": "Animal Husbandry UP",
-    "slug": "animal-husbandry-up",
+    "name": "Gau Seva",
+    "slug": "gau-seva",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "animalhusbandryup",
+    "scheme": "gauseva",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.govrefapp.animalhusbandry",
+      "bundleIdentifier": "com.gauseva.app",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSCameraUsageDescription": "Take photos for reference application",
         "NSPhotoLibraryUsageDescription": "Upload documents for verification"
       }
     },
     "android": {
-      "package": "com.govrefapp.animalhusbandry",
+      "package": "com.gauseva.app",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#FF9933"
@@ -49,13 +51,13 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow Animal Husbandry app to access camera for capturing photos"
+          "cameraPermission": "Allow Gau Seva app to access camera for capturing photos"
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Animal Husbandry app to access photos for document upload"
+          "photosPermission": "Allow Gau Seva app to access photos for document upload"
         }
       ]
     ],

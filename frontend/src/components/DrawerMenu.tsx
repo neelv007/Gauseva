@@ -154,6 +154,12 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    overflow: 'hidden',
+  },
+  drawerLogo: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
   },
   drawerTitle: {
     fontSize: 18,

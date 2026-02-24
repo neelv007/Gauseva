@@ -24,8 +24,9 @@ export default function HomePage() {
         {/* Hero Banner */}
         <View style={styles.heroBanner}>
           <Image
-            source={{ uri: 'https://images.unsplash.com/photo-1500595046743-cd271d694e30?w=800' }}
+            source={{ uri: 'https://customer-assets.emergentagent.com/job_citizen-ref-hub/artifacts/5uya9kaw_gau3.webp' }}
             style={styles.heroImage}
+            resizeMode="cover"
           />
           <View style={styles.heroOverlay}>
             <Text style={styles.heroTextHindi}>

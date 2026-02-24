@@ -66,10 +66,12 @@ export default function HomePage() {
           <View style={styles.leadershipContainer}>
             <View style={styles.leaderCard}>
               <View style={styles.leaderImageContainer}>
-                <Image
-                  source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Yogi_Adityanath_official_portrait.jpg/220px-Yogi_Adityanath_official_portrait.jpg' }}
+                <ImageWithFallback
+                  source={{ uri: 'https://www.yogiadityanath.in/images/cm.jpg' }}
+                  fallbackInitials="YA"
+                  fallbackColor={COLORS.saffron}
                   style={styles.leaderImage}
-                  resizeMode="cover"
+                  circular
                 />
                 <View style={styles.tricolorBorder}>
                   <View style={[styles.colorBar, { backgroundColor: COLORS.saffron }]} />
@@ -84,10 +86,12 @@ export default function HomePage() {
 
             <View style={styles.leaderCard}>
               <View style={styles.leaderImageContainer}>
-                <Image
-                  source={{ uri: 'https://www.ثالث.com/wp-content/uploads/2024/03/dharmpal-singh.jpg' }}
+                <ImageWithFallback
+                  source={{ uri: 'https://pbs.twimg.com/profile_images/1509851728307621888/p1elX8ar_400x400.jpg' }}
+                  fallbackInitials="DS"
+                  fallbackColor={COLORS.green}
                   style={styles.leaderImage}
-                  resizeMode="cover"
+                  circular
                 />
                 <View style={styles.tricolorBorder}>
                   <View style={[styles.colorBar, { backgroundColor: COLORS.saffron }]} />

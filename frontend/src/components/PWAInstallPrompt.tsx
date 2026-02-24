@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS, SPACING } from '../constants/colors';
 
-const APP_LOGO = 'https://customer-assets.emergentagent.com/job_citizen-ref-hub/artifacts/h91vxs4b_466389831_567307805952219_3183561701720241008_n.jpg';
+const APP_LOGO = require('../../assets/images/gau-seva-logo.jpg');
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;

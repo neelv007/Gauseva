@@ -6,12 +6,15 @@ import {
   TouchableOpacity,
   Modal,
   Pressable,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING } from '../constants/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../store/authStore';
+
+const APP_LOGO = 'https://customer-assets.emergentagent.com/job_citizen-ref-hub/artifacts/h91vxs4b_466389831_567307805952219_3183561701720241008_n.jpg';
 
 interface DrawerMenuProps {
   visible: boolean;

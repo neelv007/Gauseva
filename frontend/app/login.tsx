@@ -190,6 +190,12 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
     borderWidth: 3,
     borderColor: COLORS.saffron,
+    overflow: 'hidden',
+  },
+  logoImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
   },
   logoTitle: {
     fontSize: 18,

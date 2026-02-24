@@ -10,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Header } from '../src/components/Header';
 import { DrawerMenu } from '../src/components/DrawerMenu';
+import { ImageWithFallback } from '../src/components/ImageWithFallback';
 import { COLORS, SPACING } from '../src/constants/colors';
 
 export default function HomePage() {

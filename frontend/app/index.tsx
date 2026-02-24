@@ -87,7 +87,7 @@ export default function HomePage() {
             <View style={styles.leaderCard}>
               <View style={styles.leaderImageContainer}>
                 <ImageWithFallback
-                  source={{ uri: 'https://pbs.twimg.com/profile_images/1509851728307621888/p1elX8ar_400x400.jpg' }}
+                  source={{ uri: 'https://i.ibb.co/Mx1M74gh/dhrampalsingh.png' }}
                   fallbackInitials="DS"
                   fallbackColor={COLORS.green}
                   style={styles.leaderImage}

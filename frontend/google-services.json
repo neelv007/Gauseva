@@ -7,9 +7,28 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:231543168525:android:34cd66db8c7ffb98f7bf44",
+        "mobilesdk_app_id": "1:231543168525:android:017319447337fe3ef7bf44",
         "android_client_info": {
           "package_name": "com.gauseva.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCA4dplKRQkfLasq-ppy0HfiD4Fp3anfAU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:231543168525:android:34cd66db8c7ffb98f7bf44",
+        "android_client_info": {
+          "package_name": "com.govrefapp.mobile"
         }
       },
       "oauth_client": [],

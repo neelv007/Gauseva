@@ -131,14 +131,7 @@ export default function LoginPage() {
                 <Text style={styles.loginButtonText}>LOGIN</Text>
               </TouchableOpacity>
 
-              {/* Demo Credentials Info */}
-              <View style={styles.demoInfo}>
-                <Ionicons name="information-circle" size={18} color={COLORS.info} />
-                <Text style={styles.demoText}>
-                  Demo Credentials:{' '}
-                  <Text style={styles.demoCredentials}>rajendra-co / N@@l6@@50</Text>
-                </Text>
-              </View>
+              {/* Powered by Gau Seva */}
             </View>
           </View>
 

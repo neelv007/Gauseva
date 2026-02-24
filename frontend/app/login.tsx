@@ -90,9 +90,9 @@ export default function LoginPage() {
             {/* Logo */}
             <View style={styles.logoContainer}>
               <View style={styles.logoCircle}>
-                <Ionicons name="shield-checkmark" size={50} color={COLORS.saffron} />
+                <Image source={{ uri: APP_LOGO }} style={styles.logoImage} />
               </View>
-              <Text style={styles.logoTitle}>Animal Husbandry Department</Text>
+              <Text style={styles.logoTitle}>Gau Seva</Text>
               <Text style={styles.logoSubtitle}>Government of Uttar Pradesh</Text>
             </View>
 

@@ -1,12 +1,10 @@
 import { create } from 'zustand';
-import { initializeApp, getApps } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { 
   getAuth, 
   signInWithPhoneNumber, 
   RecaptchaVerifier,
-  ConfirmationResult,
-  PhoneAuthProvider,
-  signInWithCredential
+  ConfirmationResult
 } from 'firebase/auth';
 import { Platform } from 'react-native';
 
@@ -21,14 +19,11 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase only if not already initialized
-let app;
-if (getApps().length === 0) {
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApps()[0];
-}
-
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
+
+// Enable invisible reCAPTCHA for better UX
+auth.settings.appVerificationDisabledForTesting = false;
 
 interface OTPState {
   isOtpSent: boolean;
@@ -37,14 +32,15 @@ interface OTPState {
   error: string | null;
   phoneNumber: string;
   confirmationResult: ConfirmationResult | null;
-  verificationId: string | null;
+  recaptchaVerifier: RecaptchaVerifier | null;
   sendOtp: (phoneNumber: string) => Promise<boolean>;
   verifyOtp: (otp: string) => Promise<boolean>;
   resetOtp: () => void;
+  setupRecaptcha: (containerId: string) => void;
 }
 
-// For demo/testing purposes when Firebase phone auth doesn't work on web
-const DEMO_MODE = true; // Set to false when using on actual mobile device with proper Firebase setup
+// Set to false to use REAL Firebase OTP
+const DEMO_MODE = false;
 const DEMO_OTP = '123456';
 
 export const useOTPStore = create<OTPState>((set, get) => ({
@@ -54,13 +50,41 @@ export const useOTPStore = create<OTPState>((set, get) => ({
   error: null,
   phoneNumber: '',
   confirmationResult: null,
-  verificationId: null,
+  recaptchaVerifier: null,
+
+  setupRecaptcha: (containerId: string) => {
+    if (Platform.OS !== 'web') return;
+    
+    try {
+      // Clear existing recaptcha if any
+      const existingVerifier = get().recaptchaVerifier;
+      if (existingVerifier) {
+        existingVerifier.clear();
+      }
+
+      const verifier = new RecaptchaVerifier(auth, containerId, {
+        size: 'invisible',
+        callback: () => {
+          console.log('reCAPTCHA solved');
+        },
+        'expired-callback': () => {
+          console.log('reCAPTCHA expired');
+          set({ error: 'reCAPTCHA expired. Please try again.' });
+        }
+      });
+      
+      set({ recaptchaVerifier: verifier });
+    } catch (error) {
+      console.error('Error setting up reCAPTCHA:', error);
+    }
+  },
 
   sendOtp: async (phoneNumber: string) => {
     set({ isLoading: true, error: null });
+    
     try {
-      // For demo mode or web platform, use mock OTP
-      if (DEMO_MODE || Platform.OS === 'web') {
+      // Demo mode for testing
+      if (DEMO_MODE) {
         console.log('Demo mode: OTP sent to', phoneNumber);
         console.log('Use OTP: 123456 to verify');
         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -72,18 +96,69 @@ export const useOTPStore = create<OTPState>((set, get) => ({
         });
         return true;
       }
-      
-      // For mobile platforms with proper Firebase setup
-      // Note: RecaptchaVerifier requires DOM and doesn't work well in React Native
-      // For production mobile apps, use react-native-firebase instead
-      
-      set({ isLoading: false, error: 'Please use mobile device for OTP verification' });
-      return false;
+
+      // Real Firebase OTP
+      if (Platform.OS === 'web') {
+        let { recaptchaVerifier } = get();
+        
+        // Setup recaptcha if not exists
+        if (!recaptchaVerifier) {
+          // Create invisible recaptcha
+          recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            size: 'invisible',
+            callback: () => {
+              console.log('reCAPTCHA verified');
+            }
+          });
+          set({ recaptchaVerifier });
+        }
+
+        // Format phone number (ensure it has country code)
+        const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber}`;
+        
+        console.log('Sending OTP to:', formattedPhone);
+        
+        const confirmationResult = await signInWithPhoneNumber(auth, formattedPhone, recaptchaVerifier);
+        
+        set({ 
+          confirmationResult, 
+          isOtpSent: true, 
+          phoneNumber: formattedPhone, 
+          isLoading: false,
+          error: null 
+        });
+        
+        return true;
+      } else {
+        // For native platforms, use demo mode as fallback
+        console.log('Native platform - using demo mode');
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        set({ 
+          isOtpSent: true, 
+          phoneNumber, 
+          isLoading: false,
+          error: null 
+        });
+        return true;
+      }
     } catch (error: any) {
       console.error('OTP Error:', error);
+      
+      let errorMessage = 'Failed to send OTP';
+      
+      if (error.code === 'auth/invalid-phone-number') {
+        errorMessage = 'Invalid phone number format';
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = 'Too many attempts. Please try again later';
+      } else if (error.code === 'auth/captcha-check-failed') {
+        errorMessage = 'reCAPTCHA verification failed. Please refresh and try again';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       set({ 
         isLoading: false, 
-        error: error.message || 'Failed to send OTP' 
+        error: errorMessage 
       });
       return false;
     }
@@ -91,9 +166,10 @@ export const useOTPStore = create<OTPState>((set, get) => ({
 
   verifyOtp: async (otp: string) => {
     set({ isLoading: true, error: null });
+    
     try {
-      // For demo mode or web platform
-      if (DEMO_MODE || Platform.OS === 'web') {
+      // Demo mode
+      if (DEMO_MODE) {
         await new Promise(resolve => setTimeout(resolve, 1000));
         if (otp === DEMO_OTP) {
           set({ isOtpVerified: true, isLoading: false, error: null });
@@ -103,28 +179,48 @@ export const useOTPStore = create<OTPState>((set, get) => ({
           return false;
         }
       }
-      
-      // For mobile platforms with confirmationResult
+
+      // Real Firebase verification
       const { confirmationResult } = get();
+      
       if (confirmationResult) {
         await confirmationResult.confirm(otp);
-        set({ isOtpVerified: true, isLoading: false });
+        set({ isOtpVerified: true, isLoading: false, error: null });
         return true;
+      } else {
+        // Fallback for native or if no confirmation result
+        set({ isLoading: false, error: 'Please send OTP first' });
+        return false;
       }
-      
-      set({ isLoading: false, error: 'Verification failed' });
-      return false;
     } catch (error: any) {
       console.error('Verification Error:', error);
+      
+      let errorMessage = 'Invalid OTP';
+      
+      if (error.code === 'auth/invalid-verification-code') {
+        errorMessage = 'Invalid OTP code. Please check and try again';
+      } else if (error.code === 'auth/code-expired') {
+        errorMessage = 'OTP has expired. Please request a new one';
+      }
+      
       set({ 
         isLoading: false, 
-        error: error.message || 'Invalid OTP' 
+        error: errorMessage 
       });
       return false;
     }
   },
 
   resetOtp: () => {
+    const { recaptchaVerifier } = get();
+    if (recaptchaVerifier) {
+      try {
+        recaptchaVerifier.clear();
+      } catch (e) {
+        // Ignore cleanup errors
+      }
+    }
+    
     set({
       isOtpSent: false,
       isOtpVerified: false,
@@ -132,7 +228,7 @@ export const useOTPStore = create<OTPState>((set, get) => ({
       error: null,
       phoneNumber: '',
       confirmationResult: null,
-      verificationId: null,
+      recaptchaVerifier: null,
     });
   },
 }));

@@ -66,8 +66,9 @@ export default function HomePage() {
             <View style={styles.leaderCard}>
               <View style={styles.leaderImageContainer}>
                 <Image
-                  source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Yogi_Adityanath_official_portrait.jpg/220px-Yogi_Adityanath_official_portrait.jpg' }}
+                  source={{ uri: 'https://customer-assets.emergentagent.com/job_citizen-ref-hub/artifacts/1fso0dk7_yogiji.png' }}
                   style={styles.leaderImage}
+                  resizeMode="cover"
                 />
                 <View style={styles.tricolorBorder}>
                   <View style={[styles.colorBar, { backgroundColor: COLORS.saffron }]} />
@@ -83,8 +84,9 @@ export default function HomePage() {
             <View style={styles.leaderCard}>
               <View style={styles.leaderImageContainer}>
                 <Image
-                  source={{ uri: 'https://pbs.twimg.com/profile_images/1597607316193480706/NvQJBCVh_400x400.jpg' }}
+                  source={{ uri: 'https://customer-assets.emergentagent.com/job_citizen-ref-hub/artifacts/1mptnqyk_dhrampalsingh.png' }}
                   style={styles.leaderImage}
+                  resizeMode="cover"
                 />
                 <View style={styles.tricolorBorder}>
                   <View style={[styles.colorBar, { backgroundColor: COLORS.saffron }]} />

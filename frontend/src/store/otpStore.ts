@@ -1,14 +1,34 @@
 import { create } from 'zustand';
+import { initializeApp, getApps } from 'firebase/app';
+import { 
+  getAuth, 
+  signInWithPhoneNumber, 
+  RecaptchaVerifier,
+  ConfirmationResult,
+  PhoneAuthProvider,
+  signInWithCredential
+} from 'firebase/auth';
+import { Platform } from 'react-native';
 
-// Firebase config placeholder - Will be updated with actual config
+// Firebase configuration
 const firebaseConfig = {
-  apiKey: '',
-  authDomain: '',
-  projectId: '',
-  storageBucket: '',
-  messagingSenderId: '',
-  appId: '',
+  apiKey: "AIzaSyA187Afuc9o8ArJo1K7Vp63uTtJ5GbW6E8",
+  authDomain: "gauseva-54908.firebaseapp.com",
+  projectId: "gauseva-54908",
+  storageBucket: "gauseva-54908.firebasestorage.app",
+  messagingSenderId: "231543168525",
+  appId: "1:231543168525:web:a2a156bdf9635c45f7bf44"
 };
+
+// Initialize Firebase only if not already initialized
+let app;
+if (getApps().length === 0) {
+  app = initializeApp(firebaseConfig);
+} else {
+  app = getApps()[0];
+}
+
+const auth = getAuth(app);
 
 interface OTPState {
   isOtpSent: boolean;
@@ -16,15 +36,16 @@ interface OTPState {
   isLoading: boolean;
   error: string | null;
   phoneNumber: string;
-  confirmationResult: any;
+  confirmationResult: ConfirmationResult | null;
+  verificationId: string | null;
   sendOtp: (phoneNumber: string) => Promise<boolean>;
   verifyOtp: (otp: string) => Promise<boolean>;
   resetOtp: () => void;
 }
 
-// For demo purposes, we'll use a mock OTP system
-// When Firebase is configured, this can be replaced with actual Firebase Auth
-const MOCK_OTP = '123456';
+// For demo/testing purposes when Firebase phone auth doesn't work on web
+const DEMO_MODE = true; // Set to false when using on actual mobile device with proper Firebase setup
+const DEMO_OTP = '123456';
 
 export const useOTPStore = create<OTPState>((set, get) => ({
   isOtpSent: false,
@@ -33,14 +54,15 @@ export const useOTPStore = create<OTPState>((set, get) => ({
   error: null,
   phoneNumber: '',
   confirmationResult: null,
+  verificationId: null,
 
   sendOtp: async (phoneNumber: string) => {
     set({ isLoading: true, error: null });
     try {
-      // Check if Firebase is configured
-      if (!firebaseConfig.apiKey) {
-        // Mock OTP for demo
-        console.log('Firebase not configured. Using mock OTP: 123456');
+      // For demo mode or web platform, use mock OTP
+      if (DEMO_MODE || Platform.OS === 'web') {
+        console.log('Demo mode: OTP sent to', phoneNumber);
+        console.log('Use OTP: 123456 to verify');
         await new Promise(resolve => setTimeout(resolve, 1500));
         set({ 
           isOtpSent: true, 
@@ -51,15 +73,14 @@ export const useOTPStore = create<OTPState>((set, get) => ({
         return true;
       }
       
-      // TODO: Implement actual Firebase OTP when config is provided
-      // const auth = getAuth();
-      // const appVerifier = new RecaptchaVerifier(...);
-      // const result = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
-      // set({ confirmationResult: result, isOtpSent: true, phoneNumber, isLoading: false });
+      // For mobile platforms with proper Firebase setup
+      // Note: RecaptchaVerifier requires DOM and doesn't work well in React Native
+      // For production mobile apps, use react-native-firebase instead
       
-      set({ isLoading: false });
-      return true;
+      set({ isLoading: false, error: 'Please use mobile device for OTP verification' });
+      return false;
     } catch (error: any) {
+      console.error('OTP Error:', error);
       set({ 
         isLoading: false, 
         error: error.message || 'Failed to send OTP' 
@@ -71,11 +92,10 @@ export const useOTPStore = create<OTPState>((set, get) => ({
   verifyOtp: async (otp: string) => {
     set({ isLoading: true, error: null });
     try {
-      // Check if Firebase is configured
-      if (!firebaseConfig.apiKey) {
-        // Mock verification for demo
+      // For demo mode or web platform
+      if (DEMO_MODE || Platform.OS === 'web') {
         await new Promise(resolve => setTimeout(resolve, 1000));
-        if (otp === MOCK_OTP) {
+        if (otp === DEMO_OTP) {
           set({ isOtpVerified: true, isLoading: false, error: null });
           return true;
         } else {
@@ -84,14 +104,18 @@ export const useOTPStore = create<OTPState>((set, get) => ({
         }
       }
       
-      // TODO: Implement actual Firebase verification when config is provided
-      // const { confirmationResult } = get();
-      // await confirmationResult.confirm(otp);
-      // set({ isOtpVerified: true, isLoading: false });
+      // For mobile platforms with confirmationResult
+      const { confirmationResult } = get();
+      if (confirmationResult) {
+        await confirmationResult.confirm(otp);
+        set({ isOtpVerified: true, isLoading: false });
+        return true;
+      }
       
-      set({ isLoading: false });
-      return true;
+      set({ isLoading: false, error: 'Verification failed' });
+      return false;
     } catch (error: any) {
+      console.error('Verification Error:', error);
       set({ 
         isLoading: false, 
         error: error.message || 'Invalid OTP' 
@@ -108,6 +132,7 @@ export const useOTPStore = create<OTPState>((set, get) => ({
       error: null,
       phoneNumber: '',
       confirmationResult: null,
+      verificationId: null,
     });
   },
 }));

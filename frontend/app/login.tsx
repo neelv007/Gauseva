@@ -142,7 +142,7 @@ export default function LoginPage() {
           <View style={styles.footer}>
             <Text style={styles.footerText}>Toll Free: 1800-180-5141</Text>
             <Text style={styles.footerCopyright}>
-              © 2024 Animal Husbandry Department
+              © 2024 Gau Seva - Animal Husbandry Department
             </Text>
           </View>
         </ScrollView>

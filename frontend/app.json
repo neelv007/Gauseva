@@ -35,7 +35,16 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "name": "Gau Seva",
+      "shortName": "Gau Seva",
+      "description": "Government of Uttar Pradesh - Animal Husbandry Department",
+      "lang": "en-IN",
+      "themeColor": "#FF9933",
+      "backgroundColor": "#FF9933",
+      "display": "standalone",
+      "orientation": "portrait",
+      "startUrl": "/"
     },
     "plugins": [
       "expo-router",

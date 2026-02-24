@@ -66,7 +66,7 @@ export default function HomePage() {
             <View style={styles.leaderCard}>
               <View style={styles.leaderImageContainer}>
                 <Image
-                  source={{ uri: 'https://customer-assets.emergentagent.com/job_citizen-ref-hub/artifacts/1fso0dk7_yogiji.png' }}
+                  source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Yogi_Adityanath_official_portrait.jpg/220px-Yogi_Adityanath_official_portrait.jpg' }}
                   style={styles.leaderImage}
                   resizeMode="cover"
                 />
@@ -84,7 +84,7 @@ export default function HomePage() {
             <View style={styles.leaderCard}>
               <View style={styles.leaderImageContainer}>
                 <Image
-                  source={{ uri: 'https://customer-assets.emergentagent.com/job_citizen-ref-hub/artifacts/1mptnqyk_dhrampalsingh.png' }}
+                  source={{ uri: 'https://www.ثالث.com/wp-content/uploads/2024/03/dharmpal-singh.jpg' }}
                   style={styles.leaderImage}
                   resizeMode="cover"
                 />

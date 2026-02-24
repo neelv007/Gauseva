@@ -84,20 +84,11 @@ export const PWAInstallPrompt: React.FC = () => {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall as any);
 
-    // If no beforeinstallprompt after 3 seconds, show manual instructions
-    const fallbackTimer = setTimeout(async () => {
-      const wasDismissed = await checkDismissed();
-      if (!wasDismissed && !deferredPrompt) {
-        // Show manual instructions for iOS or browsers without beforeinstallprompt
-        if (isIOSDevice || !deferredPrompt) {
-          setTimeout(() => setShowManualInstructions(true), 2000);
-        }
-      }
-    }, 3000);
+    // Don't auto-show manual instructions - let the floating button handle it
+    // This prevents the modal from blocking the UI on every page load
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall as any);
-      clearTimeout(fallbackTimer);
     };
   }, [deferredPrompt]);
 

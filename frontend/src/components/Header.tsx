@@ -4,12 +4,13 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  StatusBar,
-  Platform,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING } from '../constants/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const APP_LOGO = 'https://customer-assets.emergentagent.com/job_citizen-ref-hub/artifacts/h91vxs4b_466389831_567307805952219_3183561701720241008_n.jpg';
 
 interface HeaderProps {
   title?: string;
@@ -51,8 +52,8 @@ export const Header: React.FC<HeaderProps> = ({
         )}
 
         <View style={styles.titleContainer}>
-          <Ionicons name="shield-checkmark" size={24} color={COLORS.white} />
-          <Text style={styles.title}>{title || 'Animal Husbandry Dept.'}</Text>
+          <Image source={{ uri: APP_LOGO }} style={styles.logoImage} />
+          <Text style={styles.title}>{title || 'Gau Seva'}</Text>
         </View>
 
         <View style={styles.iconButton} />
@@ -103,9 +104,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
+  logoImage: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.white,
+  },
   title: {
     color: COLORS.white,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
   },
 });
